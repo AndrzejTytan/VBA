@@ -1,0 +1,25 @@
+'delete rows using filter
+'sort by | Key1:=rptsht.Cells(1, 1).CurrentRegion.Columns(x) | where x = index of column to sort by; sorting gives greatly better deletion performance later
+'determine how big is the table: data_block = last_row * last_col
+'apply filter to the data_block
+
+
+rptsht.Cells(1, 1).CurrentRegion.Sort Key1:=rptsht.Cells(1, 1).CurrentRegion.Columns(), Order1:=xlAscending, Orientation:=xlTopToBottom, Header:=xlYes
+
+last_row = rptsht.Range("A1").End(xlDown).Row
+last_col = rptsht.Range("A1").End(xlToRight).Column
+Set data_block = rptsht.Range(rptsht.Cells(1, 1), rptsht.Cells(last_row, last_col))
+
+Application.DisplayAlerts = False
+With data_block
+    .AutoFilter Field:=, Criteria1:="" 'field = column index, criteria = filter some string
+    .Offset(1, 0).Resize(.Rows.Count - 1).SpecialCells(xlCellTypeVisible).Rows.Delete
+End With
+Application.DisplayAlerts = True
+
+With rptsht
+    .AutoFilterMode = False
+    If .FilterMode = True Then
+        .ShowAllData
+    End If
+End With
