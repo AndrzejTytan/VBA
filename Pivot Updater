@@ -1,0 +1,49 @@
+Option Explicit
+Sub UpdatePivotSourceData()
+
+'Refreshes source data range for all pivot tables in current active worksheet. First row and column of source data must not contain blank values.
+'version date: 27/05/2021
+
+Application.ScreenUpdating = False
+
+Dim pvt As PivotTable
+Dim ws As Worksheet
+Dim newcache As PivotCache
+Dim pivotName As String
+Dim pivotSource As Variant
+
+Dim sourcesheet As String
+Dim newsourcerange As Range
+
+'Datatype varians as raw data tables can contain >32k records
+Dim lastRow As Variant
+Dim lastCol As Variant
+
+Set ws = ActiveSheet
+
+If ws.PivotTables.Count > 0 Then
+        For Each pvt In ws.PivotTables
+            pivotName = pvt.Name
+            pivotSource = pvt.PivotCache.SourceData
+            sourcesheet = Replace(Left(pivotSource, InStr(pivotSource, "!") - 1), "'", "")
+            Worksheets(sourcesheet).Select
+            'Last row and column index needs to be determined this way because combination of end(xltoright)+end(xldown) or selectcurrentarea produces unwanted results
+            lastRow = ActiveSheet.Range("A1").End(xlDown).Row
+            lastCol = ActiveSheet.Range("A1").End(xlToRight).Column
+            Debug.Print "Last column index: " & lastCol & "| Last row index: " & lastRow
+            Set newsourcerange = ActiveSheet.Range(Cells(1, 1), Cells(lastRow, lastCol))
+            Debug.Print pivotName & " source range: " & pivotSource & " | source sheet: " & sourcesheet & " | new source: " & newsourcerange.Address
+            Set newcache = ActiveWorkbook.PivotCaches.Create(xlDatabase, SourceData:=newsourcerange)
+            pvt.ChangePivotCache newcache
+            pvt.RefreshTable
+        Next pvt
+        ws.Select
+        MsgBox ("Pivot tables sources updated. Click OK to refresh pivots.")
+ElseIf ws.PivotTables.Count = 0 Then
+    MsgBox ("No pivot tables found.")
+End If
+
+Application.ScreenUpdating = False
+
+End Sub
+
